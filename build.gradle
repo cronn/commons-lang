@@ -1,0 +1,134 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencyLocking {
+        lockAllConfigurations()
+    }
+}
+
+plugins {
+    id 'java-library'
+    id 'jacoco'
+    id 'maven-publish'
+    id 'signing'
+}
+
+group = 'de.cronn'
+version = '1.0-SNAPSHOT'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    mavenCentral()
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    options.compilerArgs.addAll(['-Werror'])
+}
+
+test {
+    useJUnitPlatform()
+
+    maxHeapSize = "256m"
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-params:latest.release'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:latest.release'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    testImplementation 'org.assertj:assertj-core:latest.release'
+
+    components.all { ComponentMetadataDetails details ->
+        if (details.id.version =~ /(?i).+([-.])(CANDIDATE|RC|BETA|ALPHA|M\d+).*/) {
+            details.status = 'milestone'
+        }
+    }
+}
+
+dependencyLocking {
+    lockAllConfigurations()
+}
+
+wrapper {
+    gradleVersion = "8.8"
+    distributionType = Wrapper.DistributionType.ALL
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    archiveClassifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    archiveClassifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = project.group
+            artifactId = project.name
+            version = project.version
+            pom {
+                name = project.name
+                description = 'cronn Java common language extensions'
+                url = 'https://github.com/cronn/commons-lang'
+
+                licenses {
+                    license {
+                        name = "The Apache Software License, Version 2.0"
+                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                        distribution = "repo"
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = "benedikt.waldvogel"
+                        name = "Benedikt Waldvogel"
+                        email = "benedikt.waldvogel@cronn.de"
+                    }
+                }
+
+                scm {
+                    url = "https://github.com/cronn/commons-lang"
+                }
+            }
+
+            from components.java
+
+            artifact sourcesJar
+            artifact javadocJar
+
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                }
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            url "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+            credentials {
+                username = project.hasProperty('nexusUsername') ? project.property('nexusUsername') : System.getenv('NEXUS_USERNAME')
+                password = project.hasProperty('nexusPassword') ? project.property('nexusPassword') : System.getenv('NEXUS_PASSWORD')
+            }
+        }
+    }
+}
+
+signing {
+    useGpgCmd()
+    sign publishing.publications.mavenJava
+}
