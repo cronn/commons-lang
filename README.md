@@ -16,6 +16,93 @@ Add the following Maven dependency to your project:
 </dependency>
 ```
 
+This library includes the following classes, which are described in detail in the sections below:
+
+- `StreamUtil`: Collectors and utilities that are useful when working with Java streams
+- `Action`: An interface that is similar to `Runnable` but allows to throw checked exceptions
+- `AlphanumericComparator`: A comparator that implements [the Alphanum Algorithm][alphanum-algorithm] which is useful to sort versions or filenames in a more
+
+## StreamUtil
+
+### toSingleElement()
+
+Good case:
+```java
+Object number = Stream.of(1, 2, 3)
+    .filter(value -> value > 2)
+    .collect(StreamUtil.toSingleElement());
+// number = 3
+```
+
+Bad case:
+```java
+Object number = Stream.of(1, 2, 3, 4)
+    .filter(value -> value > 2)
+    .collect(StreamUtil.toSingleElement());
+// Throws IllegalStateException: Exactly one element expected but got 2: [3, 4]
+```
+
+### toSingleOptionalElement()
+
+Similar to `toSingleElement()` but returns an `Optional` and throws no exception if no element was found.
+
+```java
+Optional<Object> number = Stream.of(1, 2, 3)
+    .filter(value -> value > 2)
+    .collect(StreamUtil.toSingleOptionalElement());
+```
+
+### toLinkedHashSet()
+
+`StreamUtil.toLinkedHashSet()` is a drop-replacement for `Collectors.toSet()` that guarantees a stable/deterministic order.
+
+Example:
+
+```java
+// numbers contains 1, 2, 3 and returns the elements in exactly this order when iterating
+Set<Object> numbers = Stream.of(1, 2, 3, 2, 3)
+    .collect(StreamUtil.toLinkedHashSet());
+```
+
+
+## AlphanumericComparator
+
+> People sort strings with numbers differently than software does.
+> Most sorting algorithms compare ASCII values, which produces an ordering that is inconsistent with human logic.
+
+Consider the following list of filenames:
+
+```
+file1.txt
+file2.txt
+file10.txt
+file3.txt
+```
+
+If you sort this list using the default sort order, the result will be:
+
+```
+file1.txt
+file10.txt
+file2.txt
+file3.txt
+```
+
+This order is not intuitive for most people.
+
+However, by using the AlphanumericComparator, you will get:
+
+```
+file1.txt
+file2.txt
+file3.txt
+file10.txt
+```
+
+This order is more natural and aligns with human expectations.
+
 ## Requirements ##
 
 - Java 17+
+
+[alphanum-algorithm]: http://www.davekoelle.com/alphanum.html
