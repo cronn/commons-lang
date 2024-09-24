@@ -15,6 +15,8 @@ public interface Action {
 		return () -> {
 			try {
 				execute();
+			} catch (RuntimeException e) {
+				throw e;
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
