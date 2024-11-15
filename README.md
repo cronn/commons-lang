@@ -64,6 +64,23 @@ Set<Object> numbers = Stream.of(1, 2, 3, 2, 3)
     .collect(StreamUtil.toLinkedHashSet());
 ```
 
+### SetUtils
+
+`SetUtils` provides utility methods for creating ordered sets in Java.
+
+Unlike `Set.of(…)`, `SetUtils.orderedSet(…)` maintains the order of elements as they are added.
+
+#### Example Usage
+
+```java
+Set<String> ordered = SetUtils.orderedSet("abc", "def", "ghi");
+// Output: [abc, def, ghi]
+
+Set<Integer> numbers = SetUtils.orderedSet(3, 1, 2, 1);
+// Output: [3, 1, 2]
+```
+
+> **Key Difference**: `SetUtils.orderedSet(…)` uses `LinkedHashSet`, ensuring insertion order is preserved.
 
 ## AlphanumericComparator
 
