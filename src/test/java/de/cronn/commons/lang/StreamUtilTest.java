@@ -134,6 +134,26 @@ class StreamUtilTest {
 	}
 
 	@Test
+	void testToLinkedHashMap_Duplicates_customExceptionSupplier() throws Exception {
+		record Person(String name, int ageInYears) {
+		}
+		List<Person> persons = List.of(
+			new Person("Max", 15),
+			new Person("John", 35),
+			new Person("Max", 17));
+
+		assertThatExceptionOfType(IllegalStateException.class)
+			.isThrownBy(() -> persons.stream()
+				.collect(StreamUtil.toLinkedHashMap(Person::name, Function.identity(),
+					(name, newPerson, existingPerson) -> {
+						String message = "Duplicate person with name '%s': '%s' and '%s'".formatted(name,
+							newPerson, existingPerson);
+						return new IllegalStateException(message);
+					})))
+			.withMessage("Duplicate person with name 'Max': 'Person[name=Max, ageInYears=17]' and 'Person[name=Max, ageInYears=15]'");
+	}
+
+	@Test
 	void testToLinkedHashSet() throws Exception {
 		List<String> elements = Arrays.asList("a", "b", "b", "c");
 		Set<String> map = elements.stream().collect(StreamUtil.toLinkedHashSet());
