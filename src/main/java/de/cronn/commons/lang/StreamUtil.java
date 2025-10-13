@@ -39,7 +39,16 @@ public final class StreamUtil {
 	public static <T, K, V> Collector<T, ?, Map<K, V>> toLinkedHashMap(
 		Function<? super T, ? extends K> keyMapper,
 		Function<? super T, ? extends V> valueMapper) {
-		return new UniqueKeyLinkedHashMapCollector<>(keyMapper, valueMapper);
+		return toLinkedHashMap(keyMapper, valueMapper, (key, newValue, existingValue) -> {
+			String message = "Duplicate key '%s' with values '%s' and '%s'".formatted(key, newValue, existingValue);
+			return new IllegalArgumentException(message);
+		});
+	}
+
+	public static <T, K, V> Collector<T, ?, Map<K, V>> toLinkedHashMap(
+		Function<? super T, ? extends K> keyMapper,
+		Function<? super T, ? extends V> valueMapper, DuplicateKeyExceptionSupplier<K, V> exceptionSupplier) {
+		return new UniqueKeyLinkedHashMapCollector<>(keyMapper, valueMapper, exceptionSupplier);
 	}
 
 	@FunctionalInterface
@@ -98,17 +107,25 @@ public final class StreamUtil {
 		return entries.anyMatch(e -> !hashSet.add(e));
 	}
 
+	@FunctionalInterface
+	public interface DuplicateKeyExceptionSupplier<K, V> {
+		RuntimeException get(K key, V newValue, V existingValue);
+	}
+
 	@SuppressWarnings("ClassCanBeRecord")
 	private static class UniqueKeyLinkedHashMapCollector<T, K, V>
 		implements Collector<T, Map<K, V>, Map<K, V>> {
 		private final Function<? super T, ? extends K> keyMapper;
 		private final Function<? super T, ? extends V> valueMapper;
+		private final DuplicateKeyExceptionSupplier<K, V> exceptionSupplier;
 
 		UniqueKeyLinkedHashMapCollector(
 			Function<? super T, ? extends K> keyMapper,
-			Function<? super T, ? extends V> valueMapper) {
+			Function<? super T, ? extends V> valueMapper,
+			DuplicateKeyExceptionSupplier<K, V> exceptionSupplier) {
 			this.keyMapper = keyMapper;
 			this.valueMapper = valueMapper;
+			this.exceptionSupplier = exceptionSupplier;
 		}
 
 		@Override
@@ -148,8 +165,7 @@ public final class StreamUtil {
 		private void accumulate(Map<K, V> map, K key, V value) {
 			V existing = map.putIfAbsent(key, value);
 			if (existing != null) {
-				String message = "Duplicate key '%s' with values '%s' and '%s'".formatted(key, value, existing);
-				throw new IllegalArgumentException(message);
+				throw exceptionSupplier.get(key, value, existing);
 			}
 		}
 	}
