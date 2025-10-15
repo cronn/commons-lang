@@ -60,7 +60,7 @@ Example:
 
 ```java
 // numbers contains 1, 2, 3 and returns the elements in exactly this order when iterating
-Set<Object> numbers = Stream.of(1, 2, 3, 2, 3)
+SequencedSet<Object> numbers = Stream.of(1, 2, 3, 2, 3)
     .collect(StreamUtil.toLinkedHashSet());
 ```
 
@@ -73,10 +73,10 @@ Unlike `Set.of(…)`, `SetUtils.orderedSet(…)` maintains the order of elements
 #### Example Usage
 
 ```java
-Set<String> ordered = SetUtils.orderedSet("abc", "def", "ghi");
+SequencedSet<String> ordered = SetUtils.orderedSet("abc", "def", "ghi");
 // Output: [abc, def, ghi]
 
-Set<Integer> numbers = SetUtils.orderedSet(3, 1, 2, 1);
+SequencedSet<Integer> numbers = SetUtils.orderedSet(3, 1, 2, 1);
 // Output: [3, 1, 2]
 ```
 

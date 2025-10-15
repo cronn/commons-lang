@@ -14,7 +14,7 @@ public final class StreamUtil {
 	private StreamUtil() {
 	}
 
-	public static <T> Collector<T, ?, Set<T>> toLinkedHashSet() {
+	public static <T> Collector<T, ?, SequencedSet<T>> toLinkedHashSet() {
 		return Collectors.toCollection(LinkedHashSet::new);
 	}
 
@@ -25,18 +25,18 @@ public final class StreamUtil {
 	/**
 	 * Drop-in replacement for {@link Collectors#groupingBy(Function)} which guarantees a deterministic order of the map
 	 */
-	public static <T, K> Collector<T, ?, Map<K, List<T>>> groupingBy(
+	public static <T, K> Collector<T, ?, SequencedMap<K, List<T>>> groupingBy(
 		Function<? super T, ? extends K> classifier) {
 		return Collectors.groupingBy(classifier, LinkedHashMap::new, Collectors.toList());
 	}
 
-	public static <T, K> Collector<T, ?, Map<K, T>> toLinkedHashMap(
+	public static <T, K> Collector<T, ?, SequencedMap<K, T>> toLinkedHashMap(
 		Function<? super T, ? extends K> keyMapper) {
 		Function<T, T> identity = Function.identity();
 		return toLinkedHashMap(keyMapper, identity);
 	}
 
-	public static <T, K, V> Collector<T, ?, Map<K, V>> toLinkedHashMap(
+	public static <T, K, V> Collector<T, ?, SequencedMap<K, V>> toLinkedHashMap(
 		Function<? super T, ? extends K> keyMapper,
 		Function<? super T, ? extends V> valueMapper) {
 		return toLinkedHashMap(keyMapper, valueMapper, (key, newValue, existingValue) -> {
@@ -45,7 +45,7 @@ public final class StreamUtil {
 		});
 	}
 
-	public static <T, K, V> Collector<T, ?, Map<K, V>> toLinkedHashMap(
+	public static <T, K, V> Collector<T, ?, SequencedMap<K, V>> toLinkedHashMap(
 		Function<? super T, ? extends K> keyMapper,
 		Function<? super T, ? extends V> valueMapper, DuplicateKeyExceptionSupplier<K, V> exceptionSupplier) {
 		return new UniqueKeyLinkedHashMapCollector<>(keyMapper, valueMapper, exceptionSupplier);
@@ -71,7 +71,7 @@ public final class StreamUtil {
 					throw exceptionSupplier.get(list);
 				}
 				if (size == 1) {
-					return Optional.of(list.get(0));
+					return Optional.of(list.getFirst());
 				}
 				return Optional.empty();
 			});
@@ -98,7 +98,7 @@ public final class StreamUtil {
 						throw new IllegalStateException("Exactly one element expected but got " + size + ": " + list);
 					}
 				}
-				return list.get(0);
+				return list.getFirst();
 			});
 	}
 
@@ -114,7 +114,7 @@ public final class StreamUtil {
 
 	@SuppressWarnings("ClassCanBeRecord")
 	private static class UniqueKeyLinkedHashMapCollector<T, K, V>
-		implements Collector<T, Map<K, V>, Map<K, V>> {
+		implements Collector<T, SequencedMap<K, V>, SequencedMap<K, V>> {
 		private final Function<? super T, ? extends K> keyMapper;
 		private final Function<? super T, ? extends V> valueMapper;
 		private final DuplicateKeyExceptionSupplier<K, V> exceptionSupplier;
@@ -134,7 +134,7 @@ public final class StreamUtil {
 		}
 
 		@Override
-		public BiConsumer<Map<K, V>, T> accumulator() {
+		public BiConsumer<SequencedMap<K, V>, T> accumulator() {
 			return (map, element) -> {
 				K key = keyMapper.apply(element);
 				V value = valueMapper.apply(element);
@@ -143,12 +143,12 @@ public final class StreamUtil {
 		}
 
 		@Override
-		public Supplier<Map<K, V>> supplier() {
+		public Supplier<SequencedMap<K, V>> supplier() {
 			return LinkedHashMap::new;
 		}
 
 		@Override
-		public BinaryOperator<Map<K, V>> combiner() {
+		public BinaryOperator<SequencedMap<K, V>> combiner() {
 			return (m1, m2) -> {
 				for (Map.Entry<K, V> e : m2.entrySet()) {
 					accumulate(m1, e.getKey(), e.getValue());
@@ -158,7 +158,7 @@ public final class StreamUtil {
 		}
 
 		@Override
-		public Function<Map<K, V>, Map<K, V>> finisher() {
+		public Function<SequencedMap<K, V>, SequencedMap<K, V>> finisher() {
 			return Function.identity();
 		}
 
