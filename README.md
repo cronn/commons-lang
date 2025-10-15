@@ -120,6 +120,6 @@ This order is more natural and aligns with human expectations.
 
 ## Requirements ##
 
-- Java 17+
+- Java 21+
 
 [alphanum-algorithm]: http://www.davekoelle.com/alphanum.html
