@@ -31,54 +31,54 @@ class StreamUtilTest {
 	}
 
 	@Test
-	void testToSingleOptionalElement_throwsWhenNonSingleElementStream() throws Exception {
+	void testToSingleOptionalElement_throwsWhenNonSingleElementStream() {
 		assertThatExceptionOfType(IllegalStateException.class)
 			.isThrownBy(() -> Stream.of(1, 2).collect(StreamUtil.toSingleOptionalElement()))
 			.withMessage("One or zero elements expected but got 2: [1, 2]");
 	}
 
 	@Test
-	void testToSingleOptionalElement_collectSingleElementStream() throws Exception {
+	void testToSingleOptionalElement_collectSingleElementStream() {
 		Optional<Integer> collected = Stream.of(1).collect(StreamUtil.toSingleOptionalElement());
 		assertThat(collected).hasValue(1);
 	}
 
 	@Test
-	void testToSingleOptionalElement_collectEmptyStream() throws Exception {
+	void testToSingleOptionalElement_collectEmptyStream() {
 		Optional<Object> collected = Stream.empty().collect(StreamUtil.toSingleOptionalElement());
 		assertThat(collected).isNotPresent();
 	}
 
 	@Test
-	void testToSingleElement_throwsWhenNonSingleElementStream() throws Exception {
+	void testToSingleElement_throwsWhenNonSingleElementStream() {
 		assertThatExceptionOfType(IllegalStateException.class)
 			.isThrownBy(() -> Stream.of(1, 2).collect(StreamUtil.toSingleElement()))
 			.withMessage("Exactly one element expected but got 2: [1, 2]");
 	}
 
 	@Test
-	void testToSingleElement_throwsWhenEmptyStream() throws Exception {
+	void testToSingleElement_throwsWhenEmptyStream() {
 		assertThatExceptionOfType(IllegalStateException.class)
 			.isThrownBy(() -> Stream.empty().collect(StreamUtil.toSingleElement()))
 			.withMessage("Exactly one element expected but got 0: []");
 	}
 
 	@Test
-	void testToSingleElement_throwsUsingExceptionSupplier() throws Exception {
+	void testToSingleElement_throwsUsingExceptionSupplier() {
 		assertThatExceptionOfType(TestException.class)
 			.isThrownBy(() -> Stream.empty().collect(StreamUtil.toSingleElement(TestException::new)))
 			.withMessage(null);
 	}
 
 	@Test
-	void testToSingleElement_collectSingleElementStream() throws Exception {
+	void testToSingleElement_collectSingleElementStream() {
 		Integer collected = Stream.of(1).collect(StreamUtil.toSingleElement());
 		assertThat(collected).isNotNull();
 		assertThat(collected).isEqualTo(1);
 	}
 
 	@Test
-	void testToLinkedHashMap_Simple() throws Exception {
+	void testToLinkedHashMap_Simple() {
 		List<String> elements = List.of("first", "second", "third");
 		Map<String, String> map = elements.stream().collect(StreamUtil.toLinkedHashMap(Function.identity()));
 		assertThat(map.keySet()).containsExactlyElementsOf(elements);
@@ -86,7 +86,7 @@ class StreamUtilTest {
 	}
 
 	@Test
-	void testToLinkedHashMap_WithNull() throws Exception {
+	void testToLinkedHashMap_WithNull() {
 		Map<String, String> input = new LinkedHashMap<>();
 		input.put("first", "a");
 		input.put("second", "b");
@@ -98,7 +98,7 @@ class StreamUtilTest {
 	}
 
 	@Test
-	void testToLinkedHashMap_LargeMap() throws Exception {
+	void testToLinkedHashMap_LargeMap() {
 		List<String> elements = new ArrayList<>();
 		for (int i = 0; i < 1000; i++) {
 			elements.add(String.valueOf(i));
@@ -109,7 +109,7 @@ class StreamUtilTest {
 	}
 
 	@Test
-	void testToLinkedHashMap_LargeMapWithNull_Parallel() throws Exception {
+	void testToLinkedHashMap_LargeMapWithNull_Parallel() {
 		List<Integer> elements = new ArrayList<>();
 		for (int i = 0; i < 1000; i++) {
 			elements.add(Integer.valueOf(i));
@@ -124,7 +124,7 @@ class StreamUtilTest {
 	}
 
 	@Test
-	void testToLinkedHashMap_Duplicates() throws Exception {
+	void testToLinkedHashMap_Duplicates() {
 		List<String> elements = List.of("first", "second", "third", "first");
 
 		assertThatExceptionOfType(IllegalArgumentException.class)
@@ -134,7 +134,7 @@ class StreamUtilTest {
 	}
 
 	@Test
-	void testToLinkedHashMap_Duplicates_customExceptionSupplier() throws Exception {
+	void testToLinkedHashMap_Duplicates_customExceptionSupplier() {
 		record Person(String name, int ageInYears) {
 		}
 		List<Person> persons = List.of(
@@ -154,14 +154,14 @@ class StreamUtilTest {
 	}
 
 	@Test
-	void testToLinkedHashSet() throws Exception {
+	void testToLinkedHashSet() {
 		List<String> elements = Arrays.asList("a", "b", "b", "c");
 		Set<String> map = elements.stream().collect(StreamUtil.toLinkedHashSet());
 		assertThat(new ArrayList<>(map)).containsExactly("a", "b", "c");
 	}
 
 	@Test
-	void testGroupingBy() throws Exception {
+	void testGroupingBy() {
 		record Data(String key, int id) {
 		}
 
@@ -179,7 +179,7 @@ class StreamUtilTest {
 	}
 
 	@Test
-	void testHasDuplicates() throws Exception {
+	void testHasDuplicates() {
 		assertThat(StreamUtil.hasDuplicates(Stream.of(1, 2, 3))).isFalse();
 		assertThat(StreamUtil.hasDuplicates(Stream.of(1, 2, 1, 3))).isTrue();
 	}
