@@ -6,12 +6,11 @@ import java.util.SequencedSet;
 
 public final class SetUtils {
 
-	private SetUtils() {
-	}
+  private SetUtils() {}
 
-	@SafeVarargs
-	@SuppressWarnings("varargs")
-	public static <E> SequencedSet<E> orderedSet(E... elements) {
-		return new LinkedHashSet<>(Arrays.asList(elements));
-	}
+  @SafeVarargs
+  @SuppressWarnings("varargs")
+  public static <E> SequencedSet<E> orderedSet(E... elements) {
+    return new LinkedHashSet<>(Arrays.asList(elements));
+  }
 }

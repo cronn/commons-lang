@@ -13,6 +13,7 @@ plugins {
     `maven-publish`
     signing
     id("org.jreleaser") version "latest.release"
+    id("com.diffplug.spotless") version "latest.release"
 }
 
 group = "de.cronn"
@@ -61,6 +62,20 @@ dependencyLocking {
 tasks.wrapper {
     gradleVersion = "9.5.0"
     distributionType = Wrapper.DistributionType.ALL
+}
+
+spotless {
+    java {
+        googleJavaFormat()
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+    kotlinGradle {
+        ktlint()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
 }
 
 tasks.jacocoTestReport {
