@@ -1,9 +1,25 @@
 package de.cronn.commons.lang;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.SequencedMap;
+import java.util.SequencedSet;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -240,6 +256,57 @@ public final class StreamUtil {
   public static <T> boolean hasDuplicates(Stream<T> entries, Comparator<? super T> comparator) {
     Set<T> seenEntries = new TreeSet<>(comparator);
     return entries.anyMatch(entry -> !seenEntries.add(entry));
+  }
+
+  /**
+   * Returns a stateful {@link Predicate} that keeps only the first element for each distinct key,
+   * as extracted by {@code keyExtractor}. Subsequent elements that map to an already-seen key are
+   * filtered out silently.
+   *
+   * <p>Intended to be used as a {@link java.util.stream.Stream#filter(Predicate)} argument:
+   *
+   * <pre>{@code
+   * stream.filter(StreamUtil.distinctByKey(MyObject::getName))
+   * }</pre>
+   *
+   * <p><b>Note:</b> The predicate is thread-safe and can be used with parallel streams. {@code
+   * null} keys are not supported.
+   *
+   * @param keyExtractor function that produces the key used for deduplication
+   * @return a predicate that returns {@code true} only for the first element with each key
+   * @see #distinctByKey(Function, Consumer)
+   */
+  public static <T, K> Predicate<T> distinctByKey(Function<? super T, K> keyExtractor) {
+    return distinctByKey(
+        keyExtractor,
+        duplicate -> {
+          // ignore
+        });
+  }
+
+  /**
+   * Returns a stateful {@link Predicate} that keeps only the first element for each distinct key,
+   * as extracted by {@code keyExtractor}. Subsequent elements that map to an already-seen key are
+   * passed to the {@code duplicates} consumer and then filtered out.
+   *
+   * <p><b>Note:</b> The predicate is thread-safe and can be used with parallel streams. {@code
+   * null} keys are not supported.
+   *
+   * @param keyExtractor function that produces the key used for deduplication
+   * @param duplicates consumer called with each element that is a duplicate
+   * @return a predicate that returns {@code true} only for the first element with each key
+   */
+  public static <T, K> Predicate<T> distinctByKey(
+      Function<? super T, K> keyExtractor, Consumer<T> duplicates) {
+    Set<K> seen = ConcurrentHashMap.newKeySet();
+    return value -> {
+      K key = keyExtractor.apply(value);
+      boolean added = seen.add(key);
+      if (!added) {
+        duplicates.accept(value);
+      }
+      return added;
+    };
   }
 
   /**

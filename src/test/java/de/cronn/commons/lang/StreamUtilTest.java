@@ -1,17 +1,21 @@
 package de.cronn.commons.lang;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.entry;
 
 import java.io.Serial;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
@@ -219,5 +223,39 @@ class StreamUtilTest {
     assertThat(StreamUtil.hasDuplicates(Stream.empty(), String.CASE_INSENSITIVE_ORDER)).isFalse();
     assertThat(StreamUtil.hasDuplicates(Stream.of("only"), String.CASE_INSENSITIVE_ORDER))
         .isFalse();
+  }
+
+  @Test
+  void testDistinctByKey() {
+    assertThat(Stream.empty().filter(StreamUtil.distinctByKey(Function.identity()))).isEmpty();
+
+    assertThat(
+            Stream.of("one", "two", "three", "four")
+                .filter(StreamUtil.distinctByKey(value -> value.substring(0, 1))))
+        .containsExactly("one", "two", "four");
+
+    assertThat(
+            Stream.of("one", "two", "three", "four")
+                .filter(StreamUtil.distinctByKey(String::length)))
+        .containsExactly("one", "three", "four");
+
+    assertThat(
+            IntStream.range(1, 100).boxed().filter(StreamUtil.distinctByKey(value -> value % 10)))
+        .containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+
+    assertThat(Stream.of("a", "a", "a").filter(StreamUtil.distinctByKey(Function.identity())))
+        .containsExactly("a");
+  }
+
+  @Test
+  void testDistinctByKey_withDuplicateConsumer() {
+    Set<String> duplicates = new LinkedHashSet<>();
+
+    assertThat(
+            Stream.of("one", "two", "three", "four")
+                .filter(StreamUtil.distinctByKey(String::length, duplicates::add)))
+        .containsExactly("one", "three", "four");
+
+    assertThat(duplicates).containsExactly("two");
   }
 }
