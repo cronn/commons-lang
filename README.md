@@ -81,6 +81,29 @@ StreamUtil.hasDuplicates(Stream.of("a", "A"), Comparator.naturalOrder());       
 StreamUtil.hasDuplicates(Stream.of("a", "A"), String.CASE_INSENSITIVE_ORDER);                  // true
 ```
 
+### distinctByKey()
+
+A stateful `Predicate` for use with `Stream.filter()` that keeps only the first element for each distinct key. Unlike `Stream.distinct()`, deduplication is based on a key extracted from each element rather than the element itself.
+
+```java
+// Keep only the first word starting with each letter
+List<String> result = Stream.of("one", "two", "three", "four")
+    .filter(StreamUtil.distinctByKey(s -> s.charAt(0)))
+    .toList();
+// result = ["one", "two", "four"]
+```
+
+An optional `Consumer` overload collects the duplicates that were filtered out:
+
+```java
+List<String> duplicates = new ArrayList<>();
+List<String> result = Stream.of("one", "two", "three", "four")
+    .filter(StreamUtil.distinctByKey(String::length, duplicates::add))
+    .toList();
+// result = ["one", "three", "four"]
+// duplicates = ["two"]
+```
+
 ### SetUtils
 
 `SetUtils` provides utility methods for creating ordered sets in Java.
