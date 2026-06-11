@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.*;
 import java.io.Serial;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -192,7 +193,31 @@ class StreamUtilTest {
 
   @Test
   void testHasDuplicates() {
+    assertThat(StreamUtil.hasDuplicates(Stream.empty())).isFalse();
+    assertThat(StreamUtil.hasDuplicates(Stream.of(1))).isFalse();
     assertThat(StreamUtil.hasDuplicates(Stream.of(1, 2, 3))).isFalse();
     assertThat(StreamUtil.hasDuplicates(Stream.of(1, 2, 1, 3))).isTrue();
+    assertThat(StreamUtil.hasDuplicates(Stream.of(1, 1))).isTrue();
+  }
+
+  @Test
+  void testHasDuplicates_withComparator() {
+    // case-insensitive: "Hello" and "hello" are duplicates
+    assertThat(StreamUtil.hasDuplicates(Stream.of("Hello", "world"), String.CASE_INSENSITIVE_ORDER))
+        .isFalse();
+    assertThat(
+            StreamUtil.hasDuplicates(
+                Stream.of("Hello", "world", "HELLO"), String.CASE_INSENSITIVE_ORDER))
+        .isTrue();
+
+    // elements that differ by equals() but are treated as equal by comparator
+    assertThat(StreamUtil.hasDuplicates(Stream.of("a", "A"), String.CASE_INSENSITIVE_ORDER))
+        .isTrue();
+    assertThat(StreamUtil.hasDuplicates(Stream.of("a", "A"), Comparator.naturalOrder())).isFalse();
+
+    // empty and single element
+    assertThat(StreamUtil.hasDuplicates(Stream.empty(), String.CASE_INSENSITIVE_ORDER)).isFalse();
+    assertThat(StreamUtil.hasDuplicates(Stream.of("only"), String.CASE_INSENSITIVE_ORDER))
+        .isFalse();
   }
 }

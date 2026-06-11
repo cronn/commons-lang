@@ -64,6 +64,23 @@ SequencedSet<Object> numbers = Stream.of(1, 2, 3, 2, 3)
     .collect(StreamUtil.toLinkedHashSet());
 ```
 
+### hasDuplicates()
+
+Checks whether a stream contains any duplicate elements. Short-circuits on the first duplicate found.
+
+```java
+StreamUtil.hasDuplicates(Stream.of(1, 2, 3));    // false
+StreamUtil.hasDuplicates(Stream.of(1, 2, 1, 3)); // true
+```
+
+An overload accepts a `Comparator` for custom equality semantics, e.g. case-insensitive string comparison:
+
+```java
+StreamUtil.hasDuplicates(Stream.of("Hello", "world", "HELLO"), String.CASE_INSENSITIVE_ORDER); // true
+StreamUtil.hasDuplicates(Stream.of("a", "A"), Comparator.naturalOrder());                      // false
+StreamUtil.hasDuplicates(Stream.of("a", "A"), String.CASE_INSENSITIVE_ORDER);                  // true
+```
+
 ### SetUtils
 
 `SetUtils` provides utility methods for creating ordered sets in Java.

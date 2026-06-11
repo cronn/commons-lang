@@ -110,9 +110,42 @@ public final class StreamUtil {
         });
   }
 
+  /**
+   * Returns {@code true} if the given stream contains any duplicate elements (as determined by
+   * {@link Object#equals}).
+   *
+   * <p>This is a short-circuiting terminal operation: the stream is consumed only until the first
+   * duplicate is found.
+   *
+   * <p>Supports {@code null} elements.
+   *
+   * @param entries the stream to check; must not be used after this call
+   * @return {@code true} if a duplicate element was found, {@code false} otherwise
+   * @see #hasDuplicates(Stream, Comparator)
+   */
   public static <T> boolean hasDuplicates(Stream<T> entries) {
-    Set<T> hashSet = new HashSet<>();
-    return entries.anyMatch(e -> !hashSet.add(e));
+    Set<T> seenEntries = new HashSet<>();
+    return entries.anyMatch(entry -> !seenEntries.add(entry));
+  }
+
+  /**
+   * Returns {@code true} if the given stream contains any duplicate elements, where equality is
+   * determined by the given {@link Comparator} (i.e. two elements are considered equal when the
+   * comparator returns {@code 0}).
+   *
+   * <p>This is useful when the natural {@link Object#equals} behaviour is not suitable, e.g. for
+   * case-insensitive string comparison or custom domain equality.
+   *
+   * <p>This is a short-circuiting terminal operation: the stream is consumed only until the first
+   * duplicate is found.
+   *
+   * @param entries the stream to check; must not be used after this call
+   * @param comparator the comparator used to determine equality between elements
+   * @return {@code true} if a duplicate element was found, {@code false} otherwise
+   */
+  public static <T> boolean hasDuplicates(Stream<T> entries, Comparator<? super T> comparator) {
+    Set<T> seenEntries = new TreeSet<>(comparator);
+    return entries.anyMatch(entry -> !seenEntries.add(entry));
   }
 
   @FunctionalInterface
