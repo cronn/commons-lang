@@ -4,10 +4,18 @@
 [![codecov](https://codecov.io/gh/cronn/commons-lang/branch/main/graph/badge.svg?token=KD1WJK5ZFK)](https://codecov.io/gh/cronn/commons-lang)
 [![Valid Gradle Wrapper](https://github.com/cronn/commons-lang/workflows/Validate%20Gradle%20Wrapper/badge.svg)](https://github.com/cronn/commons-lang/actions/workflows/gradle-wrapper-validation.yml)
 
-# cronn commons-lang #
+# cronn commons-lang
 
-Add the following Maven dependency to your project:
+**Small Java utilities that fill gaps in the standard library.** No heavy dependencies, no magic.
 
+## Installation
+
+**Gradle (Kotlin DSL)**
+```kotlin
+implementation("de.cronn:commons-lang:1.5")
+```
+
+**Maven**
 ```xml
 <dependency>
     <groupId>de.cronn</groupId>
@@ -16,52 +24,58 @@ Add the following Maven dependency to your project:
 </dependency>
 ```
 
-This library includes the following classes, which are described in detail in the sections below:
+## Contents
 
-- `StreamUtil`: Collectors and utilities that are useful when working with Java streams
-- `Action`: An interface that is similar to `Runnable` but allows to throw checked exceptions
-- `AlphanumericComparator`: A comparator that implements [the Alphanum Algorithm][alphanum-algorithm] which is useful to sort versions or filenames in a more
+| Class                                               | Description                                             |
+|-----------------------------------------------------|---------------------------------------------------------|
+| [`StreamUtil`](#streamutil)                         | Collectors and stream utilities missing from the JDK    |
+| [`SetUtils`](#setutils)                             | Factory methods for ordered sets                        |
+| [`Action`](#action)                                 | `Runnable` that allows throwing checked exceptions      |
+| [`AlphanumericComparator`](#alphanumericcomparator) | Human-friendly sorting of strings with embedded numbers |
+
+---
 
 ## StreamUtil
 
+`StreamUtil` provides collectors and stream utilities that complement `java.util.stream.Collectors`.
+It covers common patterns like collecting to a single element, deduplication by key, and
+order-preserving alternatives to standard collectors.
+
 ### toSingleElement()
 
-Good case:
+Collects exactly one element, throws `IllegalStateException` otherwise.
+
 ```java
-Object number = Stream.of(1, 2, 3)
+// works fine
+int number = Stream.of(1, 2, 3)
     .filter(value -> value > 2)
     .collect(StreamUtil.toSingleElement());
 // number = 3
-```
 
-Bad case:
-```java
-Object number = Stream.of(1, 2, 3, 4)
+// throws: Exactly one element expected but got 2: [3, 4]
+Stream.of(1, 2, 3, 4)
     .filter(value -> value > 2)
     .collect(StreamUtil.toSingleElement());
-// Throws IllegalStateException: Exactly one element expected but got 2: [3, 4]
 ```
 
 ### toSingleOptionalElement()
 
-Similar to `toSingleElement()` but returns an `Optional` and throws no exception if no element was found.
+Like `toSingleElement()`, but returns an `Optional` instead of throwing when no element is found.
 
 ```java
-Optional<Object> number = Stream.of(1, 2, 3)
+Optional<Integer> number = Stream.of(1, 2, 3)
     .filter(value -> value > 2)
     .collect(StreamUtil.toSingleOptionalElement());
 ```
 
 ### toLinkedHashSet()
 
-`StreamUtil.toLinkedHashSet()` is a drop-replacement for `Collectors.toSet()` that guarantees a stable/deterministic order.
-
-Example:
+Drop-in replacement for `Collectors.toSet()` with a guaranteed, stable iteration order.
 
 ```java
-// numbers contains 1, 2, 3 and returns the elements in exactly this order when iterating
-SequencedSet<Object> numbers = Stream.of(1, 2, 3, 2, 3)
+SequencedSet<Integer> numbers = Stream.of(1, 2, 3, 2, 3)
     .collect(StreamUtil.toLinkedHashSet());
+// iteration order: 1, 2, 3
 ```
 
 ### hasDuplicates()
@@ -83,82 +97,94 @@ StreamUtil.hasDuplicates(Stream.of("a", "A"), String.CASE_INSENSITIVE_ORDER);   
 
 ### distinctByKey()
 
-A stateful `Predicate` for use with `Stream.filter()` that keeps only the first element for each distinct key. Unlike `Stream.distinct()`, deduplication is based on a key extracted from each element rather than the element itself.
+A stateful `Predicate` for `Stream.filter()` that keeps only the first element per distinct key.
+Unlike `Stream.distinct()`, deduplication is based on an extracted key rather than the element itself.
 
 ```java
-// Keep only the first word starting with each letter
 List<String> result = Stream.of("one", "two", "three", "four")
     .filter(StreamUtil.distinctByKey(s -> s.charAt(0)))
     .toList();
 // result = ["one", "two", "four"]
 ```
 
-An optional `Consumer` overload collects the duplicates that were filtered out:
+An optional `Consumer` overload lets you capture the duplicates that were filtered out:
 
 ```java
 List<String> duplicates = new ArrayList<>();
 List<String> result = Stream.of("one", "two", "three", "four")
     .filter(StreamUtil.distinctByKey(String::length, duplicates::add))
     .toList();
-// result = ["one", "three", "four"]
+// result    = ["one", "three", "four"]
 // duplicates = ["two"]
 ```
 
-### SetUtils
+---
 
-`SetUtils` provides utility methods for creating ordered sets in Java.
+## SetUtils
 
-Unlike `Set.of(…)`, `SetUtils.orderedSet(…)` maintains the order of elements as they are added.
-
-#### Example Usage
+Factory methods for ordered sets. Unlike `Set.of(…)`, `SetUtils.orderedSet(…)` preserves insertion
+order, silently drops duplicates, and returns a mutable set.
 
 ```java
 SequencedSet<String> ordered = SetUtils.orderedSet("abc", "def", "ghi");
-// Output: [abc, def, ghi]
+// iteration order: abc, def, ghi
 
 SequencedSet<Integer> numbers = SetUtils.orderedSet(3, 1, 2, 1);
-// Output: [3, 1, 2]
+// iteration order: 3, 1, 2  (duplicate 1 dropped)
 ```
 
-> **Key Difference**: `SetUtils.orderedSet(…)` uses `LinkedHashSet`, ensuring insertion order is preserved.
+---
+
+## Action
+
+A functional interface like `Runnable`, but allowed to throw checked exceptions. Useful as a
+lambda handle for any void operation that may fail, with adapters to standard JDK types.
+
+```java
+Action action = () -> Files.delete(path);
+
+// wrap checked exceptions as RuntimeException
+Supplier<Void> supplier = action.toSupplier();
+
+// propagate checked exceptions unchanged
+Callable<Void> callable = action.toCallable();
+```
+
+---
 
 ## AlphanumericComparator
 
-> People sort strings with numbers differently than software does.
-> Most sorting algorithms compare ASCII values, which produces an ordering that is inconsistent with human logic.
+> Humans sort `file2.txt` before `file10.txt`. Computers don't, unless you tell them to.
 
-Consider the following list of filenames:
+`AlphanumericComparator` splits strings into text and numeric segments and compares numeric parts
+by value, producing the natural order people expect.
 
-```
-file1.txt
-file2.txt
-file10.txt
-file3.txt
-```
+| Lexicographic order | Alphanumeric order |
+|---------------------|--------------------|
+| file1.txt           | file1.txt          |
+| file10.txt          | file2.txt          |
+| file2.txt           | file3.txt          |
+| file3.txt           | file10.txt         |
 
-If you sort this list using the default sort order, the result will be:
-
-```
-file1.txt
-file10.txt
-file2.txt
-file3.txt
-```
-
-This order is not intuitive for most people.
-
-However, by using the AlphanumericComparator, you will get:
-
-```
-file1.txt
-file2.txt
-file3.txt
-file10.txt
+```java
+List<String> files = List.of("file10.txt", "file3.txt", "file1.txt", "file2.txt");
+files.stream()
+    .sorted(AlphanumericComparator.getInstance())
+    .toList();
+// [file1.txt, file2.txt, file3.txt, file10.txt]
 ```
 
-This order is more natural and aligns with human expectations.
+Convenience predicates are also available:
 
-## Requirements ##
+```java
+AlphanumericComparator.isBefore("file2.txt", "file10.txt");      // true
+AlphanumericComparator.isAfter("file10.txt", "file3.txt");       // true
+AlphanumericComparator.isAfterOrEqual("file3.txt", "file3.txt"); // true
+```
+
+---
+
+## Requirements
 
 - Java 21+
 
