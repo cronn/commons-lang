@@ -2,6 +2,13 @@ buildscript {
     repositories {
         mavenCentral()
     }
+    configurations.all {
+        resolutionStrategy {
+            // JGit 7.x removed GpgObjectSigner which JReleaser 1.24.0 still depends on
+            // Fix https://github.com/jreleaser/jreleaser/issues/1643
+            force("org.eclipse.jgit:org.eclipse.jgit:6.10.0.202406032230-r")
+        }
+    }
     dependencyLocking {
         lockAllConfigurations()
     }
