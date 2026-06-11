@@ -12,7 +12,7 @@
 
 **Gradle (Kotlin DSL)**
 ```kotlin
-implementation("de.cronn:commons-lang:1.5")
+implementation("de.cronn:commons-lang:1.6")
 ```
 
 **Maven**
@@ -20,7 +20,7 @@ implementation("de.cronn:commons-lang:1.5")
 <dependency>
     <groupId>de.cronn</groupId>
     <artifactId>commons-lang</artifactId>
-    <version>1.5</version>
+    <version>1.6</version>
 </dependency>
 ```
 
