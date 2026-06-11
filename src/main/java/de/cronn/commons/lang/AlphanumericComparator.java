@@ -5,6 +5,22 @@ import java.text.Collator;
 import java.util.Comparator;
 import java.util.Locale;
 
+/**
+ * A {@link Comparator} for strings that sorts embedded numeric segments by their numeric value
+ * rather than lexicographically, producing a natural human-readable order.
+ *
+ * <p>For example, {@code "file2.txt"} sorts before {@code "file10.txt"}, whereas a plain
+ * lexicographic comparator would place {@code "file10.txt"} first.
+ *
+ * <p>Null and blank strings sort before all non-blank strings. Leading and trailing whitespace is
+ * ignored for comparison purposes.
+ *
+ * <p>Use the singleton via {@link #getInstance()}, or the convenience predicates {@link
+ * #isBefore(String, String)}, {@link #isAfter(String, String)}, and {@link #isAfterOrEqual(String,
+ * String)}.
+ *
+ * @see <a href="http://www.davekoelle.com/alphanum.html">Alphanum Algorithm</a>
+ */
 // This implementation is based on https://github.com/benjaminsaff/alphanumeric-comparator-java
 // Originally written by Farbod Safaei
 public final class AlphanumericComparator implements Comparator<String> {
@@ -16,6 +32,7 @@ public final class AlphanumericComparator implements Comparator<String> {
 
   private AlphanumericComparator() {}
 
+  /** Returns the singleton instance. */
   public static AlphanumericComparator getInstance() {
     return INSTANCE;
   }
@@ -83,14 +100,17 @@ public final class AlphanumericComparator implements Comparator<String> {
     return collator.compare(s1, s2);
   }
 
+  /** Returns {@code true} if {@code string} sorts before {@code stringToCompareWith}. */
   public static boolean isBefore(String string, String stringToCompareWith) {
     return getInstance().compare(string, stringToCompareWith) < 0;
   }
 
+  /** Returns {@code true} if {@code string} sorts after or equal to {@code stringToCompareWith}. */
   public static boolean isAfterOrEqual(String string, String stringToCompareWith) {
     return !isBefore(string, stringToCompareWith);
   }
 
+  /** Returns {@code true} if {@code string} sorts after {@code stringToCompareWith}. */
   public static boolean isAfter(String string, String stringToCompareWith) {
     return getInstance().compare(string, stringToCompareWith) > 0;
   }

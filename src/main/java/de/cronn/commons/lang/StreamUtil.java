@@ -13,29 +13,65 @@ public final class StreamUtil {
 
   private StreamUtil() {}
 
+  /**
+   * Drop-in replacement for {@link Collectors#toUnmodifiableSet()} that guarantees a
+   * stable/deterministic insertion order.
+   *
+   * @return a collector that accumulates elements into a sequenced set preserving encounter order
+   */
   public static <T> Collector<T, ?, SequencedSet<T>> toLinkedHashSet() {
     return Collectors.toCollection(LinkedHashSet::new);
   }
 
+  /**
+   * Drop-in replacement for {@link Collectors#toList()} that guarantees a modifiable {@link List}.
+   *
+   * <p>Use this when you need to mutate the resulting list after collection.
+   *
+   * @return a collector that accumulates elements into a modifiable list
+   */
   public static <T> Collector<T, ?, List<T>> toModifiableList() {
     return Collectors.toCollection(ArrayList::new);
   }
 
   /**
    * Drop-in replacement for {@link Collectors#groupingBy(Function)} which guarantees a
-   * deterministic order of the map
+   * deterministic order of the map.
+   *
+   * <p>The resulting map preserves the encounter order of the first occurrence of each key.
+   *
+   * @param classifier function mapping elements to keys
+   * @return a collector that groups elements into an ordered sequenced map
    */
   public static <T, K> Collector<T, ?, SequencedMap<K, List<T>>> groupingBy(
       Function<? super T, ? extends K> classifier) {
     return Collectors.groupingBy(classifier, LinkedHashMap::new, Collectors.toList());
   }
 
+  /**
+   * Collector that maps each element to itself, keyed by the given key extractor. Throws {@link
+   * IllegalArgumentException} on duplicate keys.
+   *
+   * @param keyMapper function producing the map key for each element
+   * @return a collector that accumulates elements into an ordered sequenced map
+   * @see #toLinkedHashMap(Function, Function)
+   * @see #toLinkedHashMap(Function, Function, DuplicateKeyExceptionSupplier)
+   */
   public static <T, K> Collector<T, ?, SequencedMap<K, T>> toLinkedHashMap(
       Function<? super T, ? extends K> keyMapper) {
     Function<T, T> identity = Function.identity();
     return toLinkedHashMap(keyMapper, identity);
   }
 
+  /**
+   * Collector that maps each element to a key-value pair using the given mapper functions. Throws
+   * {@link IllegalArgumentException} on duplicate keys.
+   *
+   * @param keyMapper function producing the map key for each element
+   * @param valueMapper function producing the map value for each element
+   * @return a collector that accumulates elements into an ordered sequenced map
+   * @see #toLinkedHashMap(Function, Function, DuplicateKeyExceptionSupplier)
+   */
   public static <T, K, V> Collector<T, ?, SequencedMap<K, V>> toLinkedHashMap(
       Function<? super T, ? extends K> keyMapper, Function<? super T, ? extends V> valueMapper) {
     return toLinkedHashMap(
@@ -49,6 +85,17 @@ public final class StreamUtil {
         });
   }
 
+  /**
+   * Collector that maps each element to a key-value pair using the given mapper functions. When a
+   * duplicate key is encountered, the given {@code exceptionSupplier} is called to produce the
+   * exception to throw.
+   *
+   * @param keyMapper function producing the map key for each element
+   * @param valueMapper function producing the map value for each element
+   * @param exceptionSupplier called with the duplicate key and both conflicting values to produce
+   *     the exception
+   * @return a collector that accumulates elements into an ordered sequenced map
+   */
   public static <T, K, V> Collector<T, ?, SequencedMap<K, V>> toLinkedHashMap(
       Function<? super T, ? extends K> keyMapper,
       Function<? super T, ? extends V> valueMapper,
@@ -56,11 +103,25 @@ public final class StreamUtil {
     return new UniqueKeyLinkedHashMapCollector<>(keyMapper, valueMapper, exceptionSupplier);
   }
 
+  /**
+   * Functional interface for supplying an exception when a stream collector encounters more
+   * elements than expected.
+   *
+   * @param <T> the element type
+   */
   @FunctionalInterface
   public interface ExceptionSupplier<T> {
     RuntimeException get(List<T> foundElements);
   }
 
+  /**
+   * Collector that expects the stream to contain at most one element, returning it wrapped in an
+   * {@link Optional}. Returns {@link Optional#empty()} for an empty stream. Throws {@link
+   * IllegalStateException} if more than one element is present.
+   *
+   * @return a collector that returns an {@link Optional} of the single element, if any
+   * @see #toSingleOptionalElement(ExceptionSupplier)
+   */
   public static <T> Collector<T, ?, Optional<T>> toSingleOptionalElement() {
     return toSingleOptionalElement(
         list ->
@@ -68,6 +129,14 @@ public final class StreamUtil {
                 "One or zero elements expected but got " + list.size() + ": " + list));
   }
 
+  /**
+   * Collector that expects the stream to contain at most one element, returning it wrapped in an
+   * {@link Optional}. Returns {@link Optional#empty()} for an empty stream. If more than one
+   * element is present, the given {@code exceptionSupplier} is called to produce the exception.
+   *
+   * @param exceptionSupplier called with all collected elements when more than one is found
+   * @return a collector that returns an {@link Optional} of the single element, if any
+   */
   public static <T> Collector<T, ?, Optional<T>> toSingleOptionalElement(
       ExceptionSupplier<T> exceptionSupplier) {
     return Collectors.collectingAndThen(
@@ -84,15 +153,40 @@ public final class StreamUtil {
         });
   }
 
+  /**
+   * Collector that expects the stream to contain exactly one element and returns it directly.
+   * Throws {@link IllegalStateException} if the stream is empty or contains more than one element.
+   *
+   * @return a collector that returns the single element
+   * @see #toSingleElement(ExceptionSupplier)
+   * @see #toSingleElement(Supplier)
+   */
   public static <T> Collector<T, ?, T> toSingleElement() {
     return toSingleElement((ExceptionSupplier<T>) null);
   }
 
+  /**
+   * Collector that expects the stream to contain exactly one element and returns it directly. If
+   * the stream is empty or contains more than one element, the given {@code exceptionSupplier} is
+   * called to produce the exception.
+   *
+   * @param exceptionSupplier called when the element count is not exactly one
+   * @return a collector that returns the single element
+   * @see #toSingleElement(ExceptionSupplier)
+   */
   public static <T> Collector<T, ?, T> toSingleElement(
       Supplier<RuntimeException> exceptionSupplier) {
     return toSingleElement(list -> exceptionSupplier.get());
   }
 
+  /**
+   * Collector that expects the stream to contain exactly one element and returns it directly. If
+   * the stream is empty or contains more than one element, the given {@code exceptionSupplier} is
+   * called with all collected elements to produce the exception.
+   *
+   * @param exceptionSupplier called with all collected elements when the count is not exactly one
+   * @return a collector that returns the single element
+   */
   public static <T> Collector<T, ?, T> toSingleElement(ExceptionSupplier<T> exceptionSupplier) {
     return Collectors.collectingAndThen(
         Collectors.toList(),
@@ -148,8 +242,22 @@ public final class StreamUtil {
     return entries.anyMatch(entry -> !seenEntries.add(entry));
   }
 
+  /**
+   * Functional interface for supplying an exception when a {@link #toLinkedHashMap} collector
+   * encounters a duplicate key.
+   *
+   * @param <K> the key type
+   * @param <V> the value type
+   */
   @FunctionalInterface
   public interface DuplicateKeyExceptionSupplier<K, V> {
+    /**
+     * Produces an exception for the given duplicate key situation.
+     *
+     * @param key the duplicate key
+     * @param newValue the value of the element that triggered the conflict
+     * @param existingValue the value already stored under {@code key}
+     */
     RuntimeException get(K key, V newValue, V existingValue);
   }
 
