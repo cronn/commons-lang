@@ -120,11 +120,11 @@ An optional `Consumer` overload lets you capture the duplicates that were filter
 
 ```java
 List<String> duplicates = new ArrayList<>();
-List<String> result = Stream.of("one", "two", "three", "four")
-    .filter(StreamUtil.distinctByKey(String::length, duplicates::add))
+List<String> result = Stream.of("one", "two", "TWO", "three", "Three", "four")
+    .filter(StreamUtil.distinctByKey(String::toLowerCase, duplicates::add))
     .toList();
-// result    = ["one", "three", "four"]
-// duplicates = ["two"]
+// result    = ["one", "two", "three", "four"]
+// duplicates = ["TWO", "Three"]
 ```
 
 ---

@@ -252,10 +252,10 @@ class StreamUtilTest {
     Set<String> duplicates = new LinkedHashSet<>();
 
     assertThat(
-            Stream.of("one", "two", "three", "four")
-                .filter(StreamUtil.distinctByKey(String::length, duplicates::add)))
-        .containsExactly("one", "three", "four");
+            Stream.of("one", "two", "TWO", "three", "Three", "four")
+                .filter(StreamUtil.distinctByKey(String::toLowerCase, duplicates::add)))
+        .containsExactly("one", "two", "three", "four");
 
-    assertThat(duplicates).containsExactly("two");
+    assertThat(duplicates).containsExactly("TWO", "Three");
   }
 }
