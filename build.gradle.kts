@@ -1,3 +1,5 @@
+import org.jreleaser.model.Active
+
 buildscript {
     repositories {
         mavenCentral()
@@ -148,13 +150,13 @@ signing {
 
 jreleaser {
     signing {
-        active = org.jreleaser.model.Active.NEVER
+        active = Active.NEVER
     }
     deploy {
         maven {
             mavenCentral {
                 create("sonatype") {
-                    active = org.jreleaser.model.Active.RELEASE
+                    active = Active.RELEASE
                     sign = false
                     url = "https://central.sonatype.com/api/v1/publisher"
                     stagingRepository("build/staging-deploy")
