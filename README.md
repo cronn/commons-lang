@@ -13,7 +13,7 @@
 This library collects small Java utilities that come up repeatedly across projects at
 [cronn](https://github.com/cronn). Some of them, like `StreamUtil.toLinkedHashSet()` and
 `SetUtils.orderedSet(...)`, directly reflect our stance on
-[determinism](https://github.com/cronn/.github/blob/main/profile/README.md#determinism): prefer
+[determinism](https://github.com/cronn#determinism): prefer
 ordered collections by default so that behaviour is consistent across runs, JVM versions, and
 environments, even when order is not required for correctness.
 
