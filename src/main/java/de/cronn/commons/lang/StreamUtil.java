@@ -139,10 +139,9 @@ public final class StreamUtil {
    * @see #toSingleOptionalElement(ExceptionSupplier)
    */
   public static <T> Collector<T, ?, Optional<T>> toSingleOptionalElement() {
-    return toSingleOptionalElement(
-        list ->
-            new IllegalStateException(
-                "One or zero elements expected but got " + list.size() + ": " + list));
+    return toSingleOptionalElement(list ->
+        new IllegalStateException(
+            "One or zero elements expected but got " + list.size() + ": " + list));
   }
 
   /**

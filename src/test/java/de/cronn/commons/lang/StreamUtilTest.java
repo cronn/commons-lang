@@ -140,10 +140,9 @@ class StreamUtilTest {
     List<String> elements = List.of("first", "second", "third", "first");
 
     assertThatExceptionOfType(IllegalArgumentException.class)
-        .isThrownBy(
-            () ->
-                elements.stream()
-                    .collect(StreamUtil.toLinkedHashMap(Function.identity(), Function.identity())))
+        .isThrownBy(() ->
+            elements.stream()
+                .collect(StreamUtil.toLinkedHashMap(Function.identity(), Function.identity())))
         .withMessage("Duplicate key 'first' with values 'first' and 'first'");
   }
 
@@ -154,19 +153,18 @@ class StreamUtilTest {
         List.of(new Person("Max", 15), new Person("John", 35), new Person("Max", 17));
 
     assertThatExceptionOfType(IllegalStateException.class)
-        .isThrownBy(
-            () ->
-                persons.stream()
-                    .collect(
-                        StreamUtil.toLinkedHashMap(
-                            Person::name,
-                            Function.identity(),
-                            (name, newPerson, existingPerson) -> {
-                              String message =
-                                  "Duplicate person with name '%s': '%s' and '%s'"
-                                      .formatted(name, newPerson, existingPerson);
-                              return new IllegalStateException(message);
-                            })))
+        .isThrownBy(() ->
+            persons.stream()
+                .collect(
+                    StreamUtil.toLinkedHashMap(
+                        Person::name,
+                        Function.identity(),
+                        (name, newPerson, existingPerson) -> {
+                          String message =
+                              "Duplicate person with name '%s': '%s' and '%s'"
+                                  .formatted(name, newPerson, existingPerson);
+                          return new IllegalStateException(message);
+                        })))
         .withMessage(
             "Duplicate person with name 'Max': 'Person[name=Max, ageInYears=17]' and 'Person[name=Max, ageInYears=15]'");
   }
