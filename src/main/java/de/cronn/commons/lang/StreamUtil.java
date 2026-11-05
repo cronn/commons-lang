@@ -1,9 +1,7 @@
 package de.cronn.commons.lang;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -15,8 +13,6 @@ import java.util.SequencedSet;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiConsumer;
-import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -116,7 +112,22 @@ public final class StreamUtil {
       Function<? super T, ? extends K> keyMapper,
       Function<? super T, ? extends V> valueMapper,
       DuplicateKeyExceptionSupplier<K, V> exceptionSupplier) {
-    return new UniqueKeyLinkedHashMapCollector<>(keyMapper, valueMapper, exceptionSupplier);
+    return Collector.<T, SequencedMap<K, V>>of(
+        LinkedHashMap::new,
+        (map, element) ->
+            putUnique(map, keyMapper.apply(element), valueMapper.apply(element), exceptionSupplier),
+        (map, other) -> {
+          other.forEach((key, value) -> putUnique(map, key, value, exceptionSupplier));
+          return map;
+        });
+  }
+
+  private static <K, V> void putUnique(
+      Map<K, V> map, K key, V value, DuplicateKeyExceptionSupplier<K, V> exceptionSupplier) {
+    V existing = map.putIfAbsent(key, value);
+    if (existing != null) {
+      throw exceptionSupplier.get(key, value, existing);
+    }
   }
 
   /**
@@ -325,63 +336,5 @@ public final class StreamUtil {
      * @param existingValue the value already stored under {@code key}
      */
     RuntimeException get(K key, V newValue, V existingValue);
-  }
-
-  @SuppressWarnings("ClassCanBeRecord")
-  private static class UniqueKeyLinkedHashMapCollector<T, K, V>
-      implements Collector<T, SequencedMap<K, V>, SequencedMap<K, V>> {
-    private final Function<? super T, ? extends K> keyMapper;
-    private final Function<? super T, ? extends V> valueMapper;
-    private final DuplicateKeyExceptionSupplier<K, V> exceptionSupplier;
-
-    UniqueKeyLinkedHashMapCollector(
-        Function<? super T, ? extends K> keyMapper,
-        Function<? super T, ? extends V> valueMapper,
-        DuplicateKeyExceptionSupplier<K, V> exceptionSupplier) {
-      this.keyMapper = keyMapper;
-      this.valueMapper = valueMapper;
-      this.exceptionSupplier = exceptionSupplier;
-    }
-
-    @Override
-    public Set<Characteristics> characteristics() {
-      return Collections.unmodifiableSet(EnumSet.of(Characteristics.IDENTITY_FINISH));
-    }
-
-    @Override
-    public BiConsumer<SequencedMap<K, V>, T> accumulator() {
-      return (map, element) -> {
-        K key = keyMapper.apply(element);
-        V value = valueMapper.apply(element);
-        accumulate(map, key, value);
-      };
-    }
-
-    @Override
-    public Supplier<SequencedMap<K, V>> supplier() {
-      return LinkedHashMap::new;
-    }
-
-    @Override
-    public BinaryOperator<SequencedMap<K, V>> combiner() {
-      return (m1, m2) -> {
-        for (Map.Entry<K, V> e : m2.entrySet()) {
-          accumulate(m1, e.getKey(), e.getValue());
-        }
-        return m1;
-      };
-    }
-
-    @Override
-    public Function<SequencedMap<K, V>, SequencedMap<K, V>> finisher() {
-      return Function.identity();
-    }
-
-    private void accumulate(Map<K, V> map, K key, V value) {
-      V existing = map.putIfAbsent(key, value);
-      if (existing != null) {
-        throw exceptionSupplier.get(key, value, existing);
-      }
-    }
   }
 }
